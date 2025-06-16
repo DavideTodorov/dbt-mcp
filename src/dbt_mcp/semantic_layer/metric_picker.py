@@ -52,8 +52,8 @@ def determine_correct_metric(all_metrics: list, user_input) -> list:
         user_input: The user's natural language query
         
     Returns:
-        list: Either an empty list if no match is found, or a list containing the single
-             MetricToolResponse object that best matches the user's query
+        list: Either an empty list if no match is found, or a list containing the name
+             of the single metric that best matches the user's query
     """
     logger.info("Starting metric determination process...")
     llm = get_bedrock_client()
@@ -148,7 +148,7 @@ def determine_correct_metric(all_metrics: list, user_input) -> list:
 
                 if metric_str in result_text_normalized:
                     logger.info(f"Found matching metric: {metric}")
-                    return [metric]
+                    return [metric.name]
 
             logger.warning(
                 f"Couldn't find exact match for LLM response: {result_text}")

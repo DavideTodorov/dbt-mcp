@@ -134,10 +134,12 @@ class SemanticLayerFetcher:
         )
         for dimension_misspelling in dimension_misspellings:
             recommendations = (
-                " Did you mean: " + ", ".join(dimension_misspelling.similar_words) + "?"
+                " Did you mean: " +
+                ", ".join(dimension_misspelling.similar_words) + "?"
             )
             errors.append(
-                f"Dimension {dimension_misspelling.word} not found." + recommendations
+                f"Dimension {dimension_misspelling.word} not found." +
+                recommendations
                 if dimension_misspelling.similar_words
                 else ""
             )
