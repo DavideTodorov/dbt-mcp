@@ -1,6 +1,9 @@
 import boto3
-import logging as log
+import logging
 import os
+from dbt_mcp.semantic_layer.client import get_semantic_layer_fetcher
+
+logger = logging.getLogger(__name__)
 
 
 def get_bedrock_client():
@@ -31,6 +34,50 @@ def get_bedrock_client():
 
         return bedrock_client
     except Exception as e:
-        log.error(f"Failed to initialize Bedrock client: {str(e)}")
+        logger.error(f"Error creating Bedrock client: {e}")
         raise
+
+
+def determine_correct_metric(all_metrics: list[str], user_input) -> list[str]:
+    llm = get_bedrock_client()
+
+    prompt = f"""
+    You are a helpful assistant that helps users find the correct metric based on their input.
+    The user input is: "{user_input}"
+    The available metrics are: {all_metrics}
+    Please return the most relevant metric(s) that match the user's input.
+    If no metrics match, return an empty list.
+    You need to be 100% sure about the metric you return.
+    If you are not sure, return an empty list. Do not make any assumptions or guesses.
+    """
+
+    try:
+        bedrock_model = os.getenv("AWS_BEDROCK_MODEL_ID")
+        request_body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 100,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "temperature": 0.0
+        }
+
+        response = llm.invoke_model(
+            model_id=bedrock_model,
+            body=request_body
+        )
+        response_body = response.get("body").read().decode("utf-8")
+    except Exception as e:
+        logger.error(f"Error invoking Bedrock model: {e}")
+        return []
+    
+    print(f"Response from Bedrock: {response_body}")
 

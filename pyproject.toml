@@ -15,8 +15,6 @@ classifiers = [
 ]
 dependencies = [
   "boto3>=1.38.36",
-  # Pinning all dependencies because this app is installed with pip
-  # and we want to have a consistent install as much as possible.
   "dbt-protos==1.0.317",
   "dbt-sl-sdk[sync]==0.11.0",
   "dbtlabs-vortex==0.2.0",

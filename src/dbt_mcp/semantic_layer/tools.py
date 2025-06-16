@@ -13,6 +13,7 @@ from dbt_mcp.semantic_layer.types import (
     OrderByParam,
     QueryMetricsSuccess,
 )
+from dbt_mcp.semantic_layer.metric_picker import determine_correct_metric
 
 logger = logging.getLogger(__name__)
 
@@ -34,18 +35,20 @@ def register_sl_tools(dbt_mcp: FastMCP, config: SemanticLayerConfig) -> None:
 
     @dbt_mcp.tool(description=get_prompt("semantic_layer/query_metrics"))
     def query_metrics(
-        metrics: list[str],
-        group_by: list[GroupByParam] | None = None,
-        order_by: list[OrderByParam] | None = None,
-        where: str | None = None,
-        limit: int | None = None,
+        query: str
     ) -> str:
+
+        all_metrics = semantic_layer_fetcher.list_metrics()
+
+        logger.info(f"Before bedrock. Available metrics: {all_metrics}")
+        metrics = determine_correct_metric(
+            all_metrics=all_metrics,
+            user_input=query,
+        )
+        logger.info(f"After bedrock. Selected metrics: {metrics}")
+        
         result = semantic_layer_fetcher.query_metrics(
             metrics=metrics,
-            group_by=group_by,
-            order_by=order_by,
-            where=where,
-            limit=limit,
         )
         if isinstance(result, QueryMetricsSuccess):
             return result.result
