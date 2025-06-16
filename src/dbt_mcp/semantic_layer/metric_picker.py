@@ -2,6 +2,8 @@ import boto3
 import logging
 import os
 from dbt_mcp.semantic_layer.client import get_semantic_layer_fetcher
+from dotenv import load_dotenv
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,7 @@ def get_bedrock_client():
         boto3.client: Configured Bedrock client
     """
     try:
+        load_dotenv()
         # Get AWS credentials from environment variables
         aws_access_key = os.environ.get("AWS_ACCESS_KEY_ID")
         aws_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -21,7 +24,7 @@ def get_bedrock_client():
 
         # Create the Bedrock client with explicit credentials
         if aws_access_key and aws_secret_key:
-            log.info(
+            logger.info(
                 f"Initializing Bedrock client with explicit credentials in region {aws_region}")
             bedrock_client = boto3.client(
                 service_name="bedrock-runtime",
@@ -52,6 +55,7 @@ def determine_correct_metric(all_metrics: list[str], user_input) -> list[str]:
     """
 
     try:
+        load_dotenv()
         bedrock_model = os.getenv("AWS_BEDROCK_MODEL_ID")
         request_body = {
             "anthropic_version": "bedrock-2023-05-31",
@@ -78,6 +82,5 @@ def determine_correct_metric(all_metrics: list[str], user_input) -> list[str]:
     except Exception as e:
         logger.error(f"Error invoking Bedrock model: {e}")
         return []
-    
-    print(f"Response from Bedrock: {response_body}")
 
+    print(f"Response from Bedrock: {response_body}")
