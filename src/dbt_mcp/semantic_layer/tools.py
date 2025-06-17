@@ -47,6 +47,14 @@ def register_sl_tools(dbt_mcp: FastMCP, config: SemanticLayerConfig) -> None:
         )
         logger.info(f"After bedrock. Selected metrics: {metrics}")
         
+        # Check if determine_correct_metric returned an empty list
+        if not metrics:
+            # Format available metrics for display
+            available_metrics = "\n".join([f"- {metric.name} ({metric.label}): {metric.description}" 
+                                         for metric in all_metrics])
+            return (f"I couldn't determine which specific metric you're looking for. "
+                   f"Please be more specific and choose one of the available metrics:\n\n{available_metrics}")
+        
         result = semantic_layer_fetcher.query_metrics(
             metrics=metrics,
         )

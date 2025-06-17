@@ -46,11 +46,11 @@ def get_bedrock_client():
 def determine_correct_metric(all_metrics: list, user_input) -> list:
     """
     Determines the most relevant metric based on user input using a Bedrock LLM.
-    
+
     Args:
         all_metrics: List of MetricToolResponse objects containing available metrics
         user_input: The user's natural language query
-        
+
     Returns:
         list: Either an empty list if no match is found, or a list containing the name
              of the single metric that best matches the user's query
@@ -59,8 +59,7 @@ def determine_correct_metric(all_metrics: list, user_input) -> list:
     llm = get_bedrock_client()
 
     prompt = f"""
-    You are a data analytics expert tasked with identifying the single most relevant metric from a dbt semantic layer based on a user query.
-
+    You are a data analytics expert tasked with identifying the single most relevant metric from a dbt semantic layer based on a user query. You MUST be extremely conservative and precise in your matching.
     # User Query
     "{user_input}"
 
@@ -68,34 +67,54 @@ def determine_correct_metric(all_metrics: list, user_input) -> list:
     {all_metrics}
 
     # Task
-    Identify the SINGLE most relevant MetricToolResponse object from the available metrics list that best matches the user's query.
+    Identify the SINGLE most relevant MetricToolResponse object from the available metrics list that best matches the user's query. If there is ANY uncertainty, ambiguity, or imperfect match, return an empty list.
 
-    # Analysis Instructions
-    1. Analyze the semantic meaning of the user query to understand their data need
-    2. Carefully compare the query against each metric's properties:
-       - name: The technical identifier of the metric
-       - label: The human-readable display name
-       - description: The detailed explanation of what the metric measures
-       - type: The calculation type (e.g., SIMPLE)
-    3. Use these criteria for determining relevance:
-       - Direct semantic match between query intent and metric purpose
-       - Business terminology alignment between query and metric descriptions
-       - Implicit business need that the metric would satisfy
-       - Consider common synonyms and related business terms (e.g., "revenue" ~ "sales" ~ "income")
+    # Strict Analysis Requirements
+    1. The user query MUST have a clear, unambiguous intent that directly corresponds to ONE specific metric
+    2. The metric's name, label, OR description MUST contain explicit terminology that directly matches the user's request
+    3. There MUST be semantic alignment between:
+       - The user's explicit data request AND the metric's stated purpose
+       - The user's business context AND the metric's business domain
+       - The user's measurement intent AND the metric's calculation scope
+
+    # Matching Criteria (ALL must be satisfied)
+    - EXACT semantic correspondence: The metric must measure precisely what the user is asking for
+    - TERMINOLOGY alignment: Key terms in the query must be explicitly present or directly synonymous in the metric's properties
+    - SCOPE compatibility: The metric's measurement scope must exactly match the user's intended analysis scope
+    - CONTEXT appropriateness: The metric must be relevant to the user's implied business context
+
+    # Assumptions STRICTLY FORBIDDEN
+    - Do NOT assume related metrics are equivalent (e.g., "revenue" ≠ "profit" ≠ "sales")
+    - Do NOT assume business context not explicitly stated in the query
+    - Do NOT assume time periods, aggregation levels, or filtering criteria
+    - Do NOT assume the user means something broader or narrower than stated
+    - Do NOT make inferential leaps about user intent
+    - Do NOT consider "close enough" matches as valid
+
+    # Quality Thresholds for Match Acceptance
+    - Confidence level: 99.99999% certainty required
+    - Semantic match: Must be direct and unambiguous
+    - Terminology overlap: Must be explicit, not inferred
+    - Business relevance: Must be explicitly demonstrable from the metric description
 
     # Response Format
     Return the COMPLETE single most relevant MetricToolResponse object AS IS, exactly as it appears in the input list.
-    If no metrics match with high confidence, return an empty list [].
+    If there is ANY doubt, uncertainty, ambiguity, or imperfect alignment, return an empty list [].
 
-    # Example Response (if a match is found)
+    # Example Response (ONLY if perfect match exists)
     MetricToolResponse(name='total_revenue', type='SIMPLE', label='Total Revenue', description='Total revenue from all orders')
 
     # Critical Requirements
-    - Return ONE complete MetricToolResponse object, not just its name
-    - If multiple metrics seem relevant, choose only the SINGLE best match
+    - Return ONE complete MetricToolResponse object ONLY if match confidence is 99.99999%
+    - If multiple metrics seem relevant, return empty list [] (ambiguity = no match)
+    - If the query is vague, unclear, or could apply to multiple metrics, return empty list []
+    - If you need to make ANY assumption about user intent, return empty list []
     - Do not modify the metric object's structure or content
-    - Do not add explanations or additional text in your response
-    - If no metrics match with high confidence, return an empty list []
+    - Do not add explanations, reasoning, or additional text in your response
+    - When in doubt, return empty list []
+
+    # Conservative Matching Philosophy
+    Better to return no match than an imperfect match. Precision over recall. Zero tolerance for assumptions.
     """
 
     logger.info(f"Prompt for Bedrock: {prompt}")
