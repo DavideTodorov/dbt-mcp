@@ -46,15 +46,32 @@ def register_sl_tools(dbt_mcp: FastMCP, config: SemanticLayerConfig) -> None:
             user_input=query,
         )
         logger.info(f"After bedrock. Selected metrics: {metrics}")
-        
+
         # Check if determine_correct_metric returned an empty list
         if not metrics:
-            # Format available metrics for display
-            available_metrics = "\n".join([f"- {metric.name} ({metric.label}): {metric.description}" 
-                                         for metric in all_metrics])
-            return (f"I couldn't determine which specific metric you're looking for. "
-                   f"Please be more specific and choose one of the available metrics:\n\n{available_metrics}")
-        
+            # Format available metrics for display in a clear, readable format
+            available_metrics = "\n".join([f"• {metric.name} ({metric.label}): {metric.description}"
+                                          for metric in all_metrics])
+            
+            # Use the special METRIC_SELECTION_REQUIRED prefix as a strong signal to stop processing
+            return f"""METRIC_SELECTION_REQUIRED
+
+I cannot determine which specific metric your query refers to. This is a FIRM STOP point that requires your input.
+
+## Available Metrics:
+{available_metrics}
+
+## Required Action:
+Please reformulate your query to clearly specify which metric you want to use.
+
+Examples of clear queries:
+- "What was our {all_metrics[0].name} last month?"
+- "Show me {all_metrics[min(1, len(all_metrics)-1)].name} by region"
+- "Calculate {all_metrics[min(2, len(all_metrics)-1)].name} for top customers"
+
+NO FURTHER ACTIONS WILL BE TAKEN until you provide a clarified query.
+"""
+
         result = semantic_layer_fetcher.query_metrics(
             metrics=metrics,
         )

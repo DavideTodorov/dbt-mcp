@@ -59,43 +59,54 @@ def determine_correct_metric(all_metrics: list, user_input) -> list:
     llm = get_bedrock_client()
 
     prompt = f"""
-    You are a data analytics expert tasked with identifying the single most relevant metric from a dbt semantic layer based on a user query. You MUST be extremely conservative and precise in your matching.
+    You are a hyper-conservative data analytics expert tasked with identifying an EXACT metric match from a dbt semantic layer based on a user query. Your primary mission is to ONLY return a metric when there is no possible ambiguity.
+
     # User Query
     "{user_input}"
 
     # Available Metrics
     {all_metrics}
 
-    # Task
-    Identify the SINGLE most relevant MetricToolResponse object from the available metrics list that best matches the user's query. If there is ANY uncertainty, ambiguity, or imperfect match, return an empty list.
+    # CRITICAL INSTRUCTION
+    Your default action MUST be to return an empty list []. Only in extremely rare cases where there is PERFECT alignment should you return a metric.
 
-    # Strict Analysis Requirements
-    1. The user query MUST have a clear, unambiguous intent that directly corresponds to ONE specific metric
-    2. The metric's name, label, OR description MUST contain explicit terminology that directly matches the user's request
-    3. There MUST be semantic alignment between:
-       - The user's explicit data request AND the metric's stated purpose
-       - The user's business context AND the metric's business domain
-       - The user's measurement intent AND the metric's calculation scope
+    # User Safety Protocol
+    Users rely on your extreme caution. False positives (returning incorrect metrics) are MUCH WORSE than false negatives (returning no metric when one might apply). Always err on the side of caution.
 
-    # Matching Criteria (ALL must be satisfied)
-    - EXACT semantic correspondence: The metric must measure precisely what the user is asking for
-    - TERMINOLOGY alignment: Key terms in the query must be explicitly present or directly synonymous in the metric's properties
-    - SCOPE compatibility: The metric's measurement scope must exactly match the user's intended analysis scope
-    - CONTEXT appropriateness: The metric must be relevant to the user's implied business context
+    # Matching Decision Tree (ALL conditions must be TRUE)
+    1. The user's query EXPLICITLY requests EXACTLY ONE metric by name or exact synonym
+    2. There is NO ambiguity whatsoever about which metric is being requested
+    3. The user has provided SUFFICIENT context to make the determination
+    4. The metric's name, label, OR description contains EXACT TERMINOLOGY matching the user's request
+    5. There is PERFECT semantic alignment between:
+       - The user's EXPLICIT data request AND the metric's STATED purpose
+       - The user's SPECIFIED business context AND the metric's domain
+       - The user's ARTICULATED measurement intent AND the metric's calculation scope
 
-    # Assumptions STRICTLY FORBIDDEN
-    - Do NOT assume related metrics are equivalent (e.g., "revenue" ≠ "profit" ≠ "sales")
-    - Do NOT assume business context not explicitly stated in the query
-    - Do NOT assume time periods, aggregation levels, or filtering criteria
-    - Do NOT assume the user means something broader or narrower than stated
-    - Do NOT make inferential leaps about user intent
-    - Do NOT consider "close enough" matches as valid
+    # MANDATORY Rejection Criteria (ANY condition means return [])
+    - Query mentions multiple potential metrics or related concepts
+    - Query is vague or could be satisfied by multiple metrics
+    - Query uses terminology that doesn't exactly match available metric descriptions
+    - Query requires ANY inference about user intent
+    - Multiple metrics seem potentially relevant
+    - Query is a compound question with multiple facets
+    - You need to make ANY assumption to link the query to a metric
+    - The match is less than 100% certain
 
-    # Quality Thresholds for Match Acceptance
-    - Confidence level: 99.99999% certainty required
-    - Semantic match: Must be direct and unambiguous
-    - Terminology overlap: Must be explicit, not inferred
-    - Business relevance: Must be explicitly demonstrable from the metric description
+    # Examples of AMBIGUOUS queries (must return [])
+    - "How is our business performing?" (too vague)
+    - "Show me customer metrics" (multiple possible metrics)
+    - "Revenue and growth analysis" (compound query)
+    - "What about sales?" (insufficient specificity)
+    - "Are we meeting targets?" (requires assumptions)
+
+    # Verification Protocol
+    Before returning ANY metric, ask yourself:
+    1. Could another metric potentially satisfy this query?
+    2. Am I making ANY assumptions about user intent?
+    3. Is there ANY ambiguity in the query?
+    4. Would a human expert agree this is the ONLY possible interpretation?
+    If ANY answer is "yes" or "maybe", return [].
 
     # Response Format
     Return the COMPLETE single most relevant MetricToolResponse object AS IS, exactly as it appears in the input list.
@@ -104,17 +115,17 @@ def determine_correct_metric(all_metrics: list, user_input) -> list:
     # Example Response (ONLY if perfect match exists)
     MetricToolResponse(name='total_revenue', type='SIMPLE', label='Total Revenue', description='Total revenue from all orders')
 
-    # Critical Requirements
-    - Return ONE complete MetricToolResponse object ONLY if match confidence is 99.99999%
-    - If multiple metrics seem relevant, return empty list [] (ambiguity = no match)
-    - If the query is vague, unclear, or could apply to multiple metrics, return empty list []
-    - If you need to make ANY assumption about user intent, return empty list []
-    - Do not modify the metric object's structure or content
-    - Do not add explanations, reasoning, or additional text in your response
-    - When in doubt, return empty list []
+    # Final Checklist
+    - Return ONE complete MetricToolResponse object ONLY if match confidence is 100%
+    - Return empty list [] for ANY level of uncertainty
+    - Return empty list [] for ANY vagueness or multiple interpretations
+    - Return empty list [] if you need to make ANY assumption
+    - Do NOT modify the metric object's structure or content
+    - Do NOT add explanations, reasoning, or additional text
+    - ALWAYS default to empty list [] when in doubt
 
-    # Conservative Matching Philosophy
-    Better to return no match than an imperfect match. Precision over recall. Zero tolerance for assumptions.
+    # Core Philosophy
+    It is ALWAYS better for the user to receive a "no metric found" response than an incorrect metric. Safety over convenience. Precision over recall. User protection is the priority.
     """
 
     logger.info(f"Prompt for Bedrock: {prompt}")
