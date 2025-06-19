@@ -1,4 +1,5 @@
-<instructions>
+# Query Metrics Tool Description
+
 Queries the dbt Semantic Layer using natural language to answer business questions from the data warehouse.
 
 This tool takes a natural language query, determines the most relevant metrics using language model analysis, and returns the query results in JSON format.
@@ -9,81 +10,61 @@ The input query should describe the business question you want to answer. The sy
 3. Query the dbt Semantic Layer with those metrics
 4. Return the results in JSON format
 
-## CRITICAL: HANDLING AMBIGUOUS METRICS
+## CRITICAL: MANDATORY USER INTERVENTION FOR AMBIGUOUS QUERIES
 
-When NO metrics can be clearly determined from the user's query (meaning the metric matching algorithm returns an empty list), this tool will return a specially formatted response with the prefix "METRIC_SELECTION_REQUIRED". This is a FIRM STOP signal that requires immediate user intervention:
+When NO metrics can be clearly determined from the user's query (meaning the metric matching algorithm returns an empty list), this tool will return a specially formatted response with the prefix "METRIC_SELECTION_REQUIRED". This is an ABSOLUTE STOP signal that **MANDATES** immediate user intervention:
 
-1. When you see "METRIC_SELECTION_REQUIRED" in a response:
-   - IMMEDIATELY STOP all processing
-   - DO NOT attempt to make any decisions or take any further actions
-   - DO NOT try to interpret the query differently
-   - DO NOT attempt to select a "best guess" metric
-   - DO NOT proceed with any analysis
-   - WAIT for explicit user clarification
+### STRICT PROTOCOL FOR MCP CLIENTS:
 
-2. The ONLY correct action is to:
-   - Present the available metrics to the user
-   - Ask the user to reformulate their query with a specific metric
-   - Wait for the user's response before proceeding
+1. **IMMEDIATE HALT**: When you see "METRIC_SELECTION_REQUIRED" in any response:
+   - **IMMEDIATELY CEASE** all processing and tool execution
+   - **ABORT** any planned follow-up actions or queries
+   - **DO NOT** attempt to make decisions on behalf of the user
+   - **DO NOT** try alternative interpretations of the query
+   - **DO NOT** attempt to select any "best guess" or "likely" metric
+   - **DO NOT** proceed with any analysis, computation, or data processing
+   - **DO NOT** call any other tools or functions
+   - **STOP ALL AUTONOMOUS ACTIONS**
 
-This is a hard guardrail to prevent incorrect assumptions or actions when metric intent is ambiguous.
+2. **MANDATORY USER ENGAGEMENT**: The MCP client **MUST**:
+   - Present the complete list of available metrics to the user
+   - Explicitly request the user to select a specific metric or reformulate their query
+   - **WAIT** for explicit user input before taking any further action
+   - **REQUIRE** the user to provide a clarified query that specifies the desired metric
 
-Don't call this tool if the user's question cannot be answered with the available metrics. Instead, clarify what metrics are available using the list_metrics tool and suggest a new question that can be answered and is approximately the same as the user's question.
+3. **ABSOLUTE PROHIBITION**: Under **NO CIRCUMSTANCES** should the MCP client:
+   - Continue processing without user clarification
+   - Make assumptions about user intent
+   - Select metrics autonomously
+   - Attempt workarounds or alternative approaches
+   - Take ANY action until the user provides explicit guidance
 
-Note that complex filtering, grouping, and ordering operations previously specified through parameters are no longer needed, as the system now automatically processes the natural language query.
-</instructions>
+4. **RESUMPTION CONDITION**: The MCP client may **ONLY** resume operations after:
+   - The user has provided a reformulated query with clear metric specification
+   - The user has explicitly selected from the available metrics
+   - The user has given direct instructions on how to proceed
 
-<examples>
-<example>
-Question: "What were our total sales last month?"
-The system will:
-1. Analyze the query using a language model
-2. Determine that "total_sales" is the most relevant metric
-3. Query the dbt Semantic Layer for this metric
-4. Return the results in JSON format
-</example>
-<example>
-Question: "Show me our top customers by revenue in the last quarter"
-The system will:
-1. Analyze the query using a language model
-2. Determine that "revenue" is the most relevant metric
-3. Query the dbt Semantic Layer for this metric
-4. Return the results in JSON format
-</example>
-<example>
-Question: "What's our average order value by product category for orders over $100?"
-The system will:
-1. Analyze the query using a language model
-2. Determine that "average_order_value" is the most relevant metric
-3. Query the dbt Semantic Layer for this metric
-4. Return the results in JSON format
-</example>
-<example>
-Question: "How many new users did we get each week last year?"
-The system will:
-1. Analyze the query using a language model
-2. Determine that "new_users" is the most relevant metric
-3. Query the dbt Semantic Layer for this metric
-4. Return the results in JSON format
-</example>
-<example>
-Question: "What's our customer satisfaction score by region?"
-The system will:
-1. Check if there's a customer satisfaction metric available
-2. If not found, it will return a "METRIC_SELECTION_REQUIRED" response with available metrics
-3. The client MUST wait for the user to clarify their metric selection
-4. Only after user clarification will the system query the dbt Semantic Layer
-</example>
-<example>
-Question: "What's our business performance recently?"
-The system will:
-1. Analyze this vague query and determine it's ambiguous (could refer to revenue, profit, growth, etc.)
-2. Return a "METRIC_SELECTION_REQUIRED" response with available metrics
-3. Wait for the user to explicitly select a specific metric or reformulate their query
-4. Only proceed with querying after receiving clear metric specification
-</example>
-</examples>
+This protocol serves as a hard guardrail to prevent incorrect assumptions, unauthorized actions, or unintended data processing when metric intent is ambiguous.
 
-<parameters>
-query: A natural language query describing the business question to answer.
-</parameters>
+**IMPLEMENTATION NOTE**: If the user's question cannot be answered with the available metrics, use the `list_metrics` tool first to clarify available options, then suggest a reformulated question that matches available metrics and addresses the user's original intent.
+
+## Examples
+
+### Successful Query Processing
+**Question**: "What were our total sales last month?"
+**Process**:
+1. Analyze query using language model
+2. Determine "total_sales" is the relevant metric
+3. Query dbt Semantic Layer
+4. Return results in JSON format
+
+### Ambiguous Query Requiring User Intervention
+**Question**: "What's our business performance recently?"
+**Process**:
+1. Analyze vague query and determine it's ambiguous
+2. Return "METRIC_SELECTION_REQUIRED" response with available metrics
+3. **MANDATORY STOP** - Wait for user to specify desired metric
+4. **ONLY** proceed after user clarification with specific metric selection
+
+### Parameters
+- `query`: A natural language query describing the business question to answer
